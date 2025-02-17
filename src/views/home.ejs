@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://widget.cloudinary.com/v2.0/global/all.js" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        /* Previous styles remain the same */
+        body { 
+            background-color: #f0f2f5;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        
+        .card-header {
+            border-radius: 12px 12px 0 0 !important;
+            background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+        }
+        
+        .product-card {
+            transition: all 0.3s ease;
+            border: none;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+        
+        .product-image {
+            height: 200px;
+            object-fit: cover;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 8px;
+            padding: 10px 15px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            box-shadow: 0 0 0 3px rgba(78,115,223,0.25);
+            border-color: #4e73df;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 500;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #224abe 0%, #1a3a96 100%);
+            transform: translateY(-1px);
+        }
+        
+        .category-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            background: rgba(255,255,255,0.9);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .price-tag {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #224abe;
+        }
+        
+        .invalid-feedback {
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+
+        /* New styles for image cropping */
+        .image-preview-container {
+            max-width: 100%;
+            margin-top: 10px;
+            display: none;
+        }
+
+        #imagePreview {
+            max-width: 100%;
+            max-height: 300px;
+        }
+
+        .cropper-container {
+            margin-bottom: 15px;
+        }
+
+        .crop-controls {
+            margin-top: 10px;
+            display: none;
+        }
+
+        .preview-box {
+            width: 150px;
+            height: 150px;
+            border: 2px solid #ddd;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0 text-white">
+                            <i class="bi bi-plus-circle me-2"></i>Add Product
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="productForm" class="needs-validation" novalidate>
+                            <!-- Previous form fields remain the same -->
+                            <div class="mb-3">
+                                <label class="form-label">Category</label>
+                                <select id="category" class="form-select" required>
+                                    <option value="">Select a category</option>
+                                    <option value="electronics">Electronics</option>
+                                    <option value="clothing">Clothing</option>
+                                    <option value="books">Books</option>
+                                    <option value="home">Home & Living</option>
+                                    <option value="sports">Sports</option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Please select a category
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Product Name</label>
+                                <input type="text" name="name" class="form-control" id="name"
+                                       required minlength="3" maxlength="50">
+                                <div class="invalid-feedback">
+                                    Product name must be between 3 and 50 characters
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Sale Price</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        <input type="number" name="salePrice" class="form-control" id="salePrice" 
+                                                required min="0.01" step="0.01">
+                                        <div class="invalid-feedback">
+                                            Please enter a valid cost price
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Regular Price</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        <input type="number" name="regularPrice" class="form-control" id="regularPrice" 
+                                               required min="0.01" step="0.01">
+                                        <div class="invalid-feedback">
+                                            Please enter a valid sales price
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" name="description" id="description" rows="3" 
+                                          required minlength="10"></textarea>
+                                <div class="invalid-feedback">
+                                    Please provide a description (minimum 10 characters)
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-save me-2"></i>Add Product
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0 text-white">
+                            <i class="bi bi-grid-3x3-gap me-2"></i>Product Catalog
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="productCatalog" class="row g-4">
+                            <%products.forEach(product=>{%>
+                            <div class="col-md-4">
+                                <div class="card">
+                                  <img style="width: 18rem;" src="data:image/png;base64,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" class="card-img-top" alt="Sample Product">
+                                  <div class="card-body">
+                                    <h5 class="card-title"><%=product.name%></h5>
+                                    <p class="card-text"><%=product.description%></p>
+                                    <p class="card-text">Category: <%=product.category%></p>
+                                    <p class="card-text">Regular Price: ₹ <%=product.regularPrice%></p>
+                                    <p class="card-text">Sale Price: ₹ <%=product.salePrice%></p>
+                                    <p class="card-text">Warranty: <%=product.warranty%></p>
+                                  </div>
+                                </div>
+                              </div>
+                            <%})%> 
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Form validation and submission
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('productForm');
+
+            form.addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                if (!form.checkValidity()) {
+                    event.stopPropagation();
+                    form.classList.add('was-validated');
+                    return;
+                }
+
+                // Show loading alert
+                Swal.fire({
+                    title: 'Uploading...',
+                    text: 'Please wait while we upload your product.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                try {
+                    // Prepare product data
+                    const productData = {
+                        category: document.getElementById('category').value,
+                        name: document.getElementById('name').value,
+                        regularPrice: parseFloat(document.getElementById('regularPrice').value),
+                        salePrice: parseFloat(document.getElementById('salePrice').value),
+                        description: document.getElementById('description').value
+                    };
+                    console.log(productData);
+
+                    // Send product data to the server
+                    const addProductResponse = await axios.post('/add', productData);
+
+                    // Show success alert
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Product Added!',
+                        text: 'Your product has been successfully added.',
+                        confirmButtonText: 'OK'
+                    }).then(()=>{
+                        window.location.reload()
+                    })
+
+                    // Reset form and validation state
+                    form.reset();
+                    form.classList.remove('was-validated');
+                } catch (error) {
+                    // Show error alert
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: 'Something went wrong! Please try again.',
+                        confirmButtonText: 'OK'
+                    });
+                    console.error('Error:', error.response?.data?.error || error.message);
+                }
+            });
+
+            // Validate sales price is greater than cost price
+            const costPrice = document.getElementById('salePrice');
+            const salesPrice = document.getElementById('regularPrice');
+
+            salesPrice.addEventListener('input', function() {
+                if (parseFloat(salesPrice.value) <= parseFloat(costPrice.value)) {
+                    salesPrice.setCustomValidity('Sales price must be greater than cost price');
+                } else {
+                    salesPrice.setCustomValidity('');
+                }
+            });
+
+            costPrice.addEventListener('input', function() {
+                if (parseFloat(salesPrice.value) <= parseFloat(costPrice.value)) {
+                    salesPrice.setCustomValidity('Sales price must be greater than cost price');
+                } else {
+                    salesPrice.setCustomValidity('');
+                }
+            });
+
+            // Handle form inputs validation
+            const inputs = form.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    if (input.checkValidity()) {
+                        input.classList.remove('is-invalid');
+                        input.classList.add('is-valid');
+                    } else {
+                        input.classList.remove('is-valid');
+                        input.classList.add('is-invalid');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
